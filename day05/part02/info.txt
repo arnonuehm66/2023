@@ -1,0 +1,6 @@
+myLowestLoc =   114257961
+                114257961
+(A Python answer 41222968)
+This answer is too high!
+
+Right answer = 104070862

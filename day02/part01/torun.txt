@@ -1,0 +1,3 @@
+./main testdata.txt 12 13 14
+./main data.txt 12 13 14
+

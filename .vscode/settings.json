@@ -1,0 +1,6 @@
+{
+  "files.associations": {
+    "stdio.h": "c",
+    "c_my_regex.h": "c"
+  }
+}
