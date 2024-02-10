@@ -21,7 +21,6 @@ s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 
 typedef struct s_node {
-  my myNo;      // My node number (AAA to ZZZ).
   my myRight;   // Next node number to the Right.
   my myLeft;    // Next node number to the Left.
 } t_node;
@@ -70,7 +69,14 @@ my node2MyInt(const char* pcNode) {
 void populateArrays(t_array(cstr)* pdacsLines) {
   t_rx_matcher tRxRL   = {0};
   t_rx_matcher tRxNode = {0};
-  t_node       tNode   = {0};
+  t_node       tNode   = {MY_MAX, MY_MAX};
+  my           myNode  = 0;
+  my           myZZZ   = node2MyInt("ZZZ");
+
+  // Create ZZZ entries to array to let offset its node number.
+  // Fill it with maxed out values for debugging purposes.
+  for (my i = 0; i < myZZZ; ++i)
+    daAdd(t_node, g_aNodes, tNode);
 
   // LLR
   rxInitMatcher(&tRxRL, "(R|L)", "", NULL);
@@ -82,26 +88,28 @@ void populateArrays(t_array(cstr)* pdacsLines) {
   while (rxMatch(&tRxRL, RX_KEEP_POS, pdacsLines->pVal[0].cStr, RX_LEN_MAX, NULL, NULL)) {
     if (tRxRL.dacsMatch.pVal[1].cStr[0] == 'L') {
       daAdd(my, g_aRLs, RL_LEFT);
-      printf("1");
+      printf("%i", RL_LEFT);
     }
     else {
       daAdd(my, g_aRLs, RL_RIGHT);
-      printf("0");
+      printf("%i", RL_RIGHT);
     }
   }
   printf("\n");
   prtHl("-", 20);
 
-  // Get all hands and corresponding bids and calculate hand's types.
+  // Read all nodes and place them into the correct node-offset.
   for (int i = 1; i < pdacsLines->sCount; ++i) {
     rxMatch(&tRxNode, 0, pdacsLines->pVal[i].cStr, RX_LEN_MAX, NULL, NULL);
 
-    tNode.myNo    = node2MyInt(tRxNode.dacsMatch.pVal[1].cStr);
+    myNode        = node2MyInt(tRxNode.dacsMatch.pVal[1].cStr);
     tNode.myLeft  = node2MyInt(tRxNode.dacsMatch.pVal[2].cStr);
     tNode.myRight = node2MyInt(tRxNode.dacsMatch.pVal[3].cStr);
-    daAdd(t_node, g_aNodes, tNode);
+
+    g_aNodes.pVal[myNode] = tNode;
+
     printf("Node(%i) (No = %"MY", Left = %"MY", Right = %"MY")\n",
-                  i - 1, tNode.myNo, tNode.myLeft, tNode.myRight);
+                  i - 1, myNode, tNode.myLeft, tNode.myRight);
   }
 
   prtHl("-", 80);
@@ -109,13 +117,13 @@ void populateArrays(t_array(cstr)* pdacsLines) {
   rxFreeMatcher(&tRxNode);
 }
 
-//******************************************************************************
-my getNodeIndex(my myNode) {
-  for (my i = 0; i < g_aNodes.sCount; ++i)
-    if (myNode == g_aNodes.pVal[i].myNo)
-      return i;
-  return -1;
-}
+// //******************************************************************************
+// my getNodeIndex(my myNode) {
+//   for (my i = 0; i < g_aNodes.sCount; ++i)
+//     if (myNode == g_aNodes.pVal[i].myNo)
+//       return i;
+//   return -1;
+// }
 
 //******************************************************************************
 //* Next RL value. Loop if it's the end.
@@ -130,20 +138,19 @@ my getHopsToZZZ(void) {
   my myZZZ  = node2MyInt("ZZZ");
   my myHops = 0;
   my myRL   = 0;
-  my i      = 0;
-  my myNode = g_aNodes.pVal[i].myNo;
+  my myNode = 0;
 
   while (myNode != myZZZ) {
     // Hop along to the next node.
     if (g_aRLs.pVal[myRL] == RL_LEFT) {
-      i = getNodeIndex(myNode);
-      myNode = g_aNodes.pVal[i].myLeft;
-      // printf("Left(1):   Jump to node %"MY" (%"MY")\n", myNode, i);
+// printf("Left (%i): Jump to node %"MY" ", RL_LEFT, myNode);
+      myNode = g_aNodes.pVal[myNode].myLeft;
+// printf("(%"MY")\n", myNode);
     }
     else {
-      i = getNodeIndex(myNode);
-      myNode = g_aNodes.pVal[i].myRight;
-      // printf("Right(0):  Jump to node %"MY" (%"MY")\n", myNode, i);
+// printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, myNode);
+      myNode = g_aNodes.pVal[myNode].myRight;
+// printf("(%"MY")\n", myNode);
     }
 
     ++myHops;
