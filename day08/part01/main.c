@@ -14,11 +14,21 @@ typedef unsigned long long my;
 
 #define ERR_FILE -1
 
+#define RL_RIGHT 0
+#define RL_LEFT  1
+
 s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 
-t_array(cstr) g_aHand;
-t_array(my)   g_aBid;
+typedef struct s_node {
+  my myNo;      // My node number (AAA to ZZZ).
+  my myRight;   // Next node number to the Right.
+  my myLeft;    // Next node number to the Left.
+} t_node;
+
+s_array(t_node);
+t_array(t_node) g_aNodes;
+t_array(my)     g_aRLs;
 
 
 //******************************************************************************
@@ -28,7 +38,7 @@ my toMyInt(const char* pcNumber) {
 }
 
 //******************************************************************************
-int getLinesFromFile(const char* filename, t_array(cstr)* pdacsLines) {
+my getLinesFromFile(const char* filename, t_array(cstr)* pdacsLines) {
   cstr  csLine = csNew("");
   FILE* hFile  = fopen(filename, "r");
 
@@ -47,158 +57,100 @@ int getLinesFromFile(const char* filename, t_array(cstr)* pdacsLines) {
 }
 
 //******************************************************************************
+// AAA = 0 = A * 26^2 + A * 26 + A
+// AAB = 1 = A * 26^2 + A * 26 + B
+my node2MyInt(const char* pcNode) {
+  my myNode = (pcNode[0] - 'A') * 26 * 26
+            + (pcNode[1] - 'A') * 26
+            + (pcNode[2] - 'A');
+  return myNode;
+}
+
+//******************************************************************************
 void populateArrays(t_array(cstr)* pdacsLines) {
-  t_rx_matcher tRxHandBid = {0};
-  my           myValue    = 0;
-  char*        cHand      = NULL;
+  t_rx_matcher tRxRL   = {0};
+  t_rx_matcher tRxNode = {0};
+  t_node       tNode   = {0};
 
-  // 32T3K 765
-  rxInitMatcher(&tRxHandBid, "(\\S+) (\\d+)", "", NULL);
-
-  prtHl("-", 80);
-
-  // Get all hands and corresponding bids and calculate hand's types.
-  for (int i = 0; i < pdacsLines->sCount; ++i) {
-    rxMatch(&tRxHandBid, 0, pdacsLines->pVal[i].cStr, RX_LEN_MAX, NULL, NULL);
-
-    cHand = tRxHandBid.dacsMatch.pVal[1].cStr;
-    daAdd(cstr, g_aHand, csNew(cHand));
-    printf("Hand = %s, ", cHand);
-
-    myValue  = toMyInt(tRxHandBid.dacsMatch.pVal[2].cStr);
-    daAdd(my, g_aBid, myValue);
-    printf("Bid = %"MY"\n", myValue);
-  }
+  // LLR
+  rxInitMatcher(&tRxRL, "(R|L)", "", NULL);
+  // AAA = (BBB, BBB);
+  rxInitMatcher(&tRxNode, "([A-Z]{3}) = \\(([A-Z]{3}), ([A-Z]{3})\\)", "", NULL);
 
   prtHl("-", 80);
 
-  rxFreeMatcher(&tRxHandBid);
-}
-
-//******************************************************************************
-// Returns the card's rank from 0 to 12. Joker are 0.
-int getCardRank(char cCard) {
-  const char* cCards = "J23456789TQKA";
-
-  for (int i = 0; i < 13; ++i)
-    if (cCard == cCards[i])
-      return i;
-
-  return -1;
-}
-
-//******************************************************************************
-// 6: Five of a kind:  AAAAA: 5 0 0 0 0
-// 5: Four of a kind:  AA8AA: 4 1 0 0 0
-// 4: Full house:      23332: 3 2 0 0 0
-// 3: Three of a kind: TTT98: 3 1 1 0 0
-// 2: Two pair:        23432: 2 2 1 0 0
-// 1: One pair:        A23A4: 2 1 1 1 0
-// 0: High card:       12345: 1 1 1 1 1
-int getTypeOfHand(const char* pcHand) {
-  int aiCount[13] = {0};
-  int iJokers     = 0;
-  int iRank       = 0;
-  int iTemp       = 0;
-
-  // Count all cards. Jokers seperately.
-  for (int i = 0; i < 5; ++i) {
-    iRank = getCardRank(pcHand[i]);
-    if (iRank == 0) {
-      ++iJokers;
+  while (rxMatch(&tRxRL, RX_KEEP_POS, pdacsLines->pVal[0].cStr, RX_LEN_MAX, NULL, NULL)) {
+    if (tRxRL.dacsMatch.pVal[1].cStr[0] == 'L') {
+      daAdd(my, g_aRLs, RL_LEFT);
+      printf("1");
     }
     else {
-      ++aiCount[iRank];
+      daAdd(my, g_aRLs, RL_RIGHT);
+      printf("0");
     }
   }
+  printf("\n");
+  prtHl("-", 20);
 
-  // Sort the counts for this hand.
-  for (int i = 0; i < 12; ++i) {
-    for (int j = i + 1; j < 13; ++j) {
-      if (aiCount[i] < aiCount[j]) {
-        iTemp      = aiCount[i];
-        aiCount[i] = aiCount[j];
-        aiCount[j] = iTemp;
-      }
-    }
+  // Get all hands and corresponding bids and calculate hand's types.
+  for (int i = 1; i < pdacsLines->sCount; ++i) {
+    rxMatch(&tRxNode, 0, pdacsLines->pVal[i].cStr, RX_LEN_MAX, NULL, NULL);
+
+    tNode.myNo    = node2MyInt(tRxNode.dacsMatch.pVal[1].cStr);
+    tNode.myLeft  = node2MyInt(tRxNode.dacsMatch.pVal[2].cStr);
+    tNode.myRight = node2MyInt(tRxNode.dacsMatch.pVal[3].cStr);
+    daAdd(t_node, g_aNodes, tNode);
+    printf("Node(%i) (No = %"MY", Left = %"MY", Right = %"MY")\n",
+                  i - 1, tNode.myNo, tNode.myLeft, tNode.myRight);
   }
 
-  // Massage all jokers into the hand.
-  aiCount[0] += iJokers;
+  prtHl("-", 80);
 
-  // Get types from sorted counts.
-  if (aiCount[0] == 5)                    return 6;
-  if (aiCount[0] == 4)                    return 5;
-  if (aiCount[0] == 3 && aiCount[1] == 2) return 4;
-  if (aiCount[0] == 3)                    return 3;
-  if (aiCount[0] == 2 && aiCount[1] == 2) return 2;
-  if (aiCount[0] == 2)                    return 1;
-  if (aiCount[0] == 1)                    return 0;
+  rxFreeMatcher(&tRxNode);
+}
 
+//******************************************************************************
+my getNodeIndex(my myNode) {
+  for (my i = 0; i < g_aNodes.sCount; ++i)
+    if (myNode == g_aNodes.pVal[i].myNo)
+      return i;
   return -1;
 }
 
 //******************************************************************************
-// hand1  > hand2 => -1
-// hand1 == hand2 =>  0
-// hand1  < hand2 =>  1
-int cmpHands(const char* pcHand1, const char* pcHand2) {
-  int iType1 = getTypeOfHand(pcHand1);
-  int iType2 = getTypeOfHand(pcHand2);
-
-  // Simple cases.
-  if (iType1 > iType2) return -1;
-  if (iType1 < iType2) return  1;
-
-  // And now the difficult ones.
-  for (int i = 0; i < 5; ++i) {
-    if (getCardRank(pcHand1[i]) > getCardRank(pcHand2[i])) return -1;
-    if (getCardRank(pcHand1[i]) < getCardRank(pcHand2[i])) return  1;
-  }
-
-  return 0;
+//* Next RL value. Loop if it's the end.
+void incRL(my* pmyRL) {
+  ++(*pmyRL);
+  if (*pmyRL == g_aRLs.sCount)
+    *pmyRL = 0;
 }
 
 //******************************************************************************
-void sortHands(void) {
- char* cHand1 = NULL;
- char* cHand2 = NULL;
- my    myTmp  = 0;
- cstr  csTmp  = {0};
+my getHopsToZZZ(void) {
+  my myZZZ  = node2MyInt("ZZZ");
+  my myHops = 0;
+  my myRL   = 0;
+  my i      = 0;
+  my myNode = g_aNodes.pVal[i].myNo;
 
-  // Sort all hands by rank.
-  for (int i = 0; i < g_aHand.sCount - 1; ++i) {
-    for (int j = i + 1; j < g_aHand.sCount; ++j) {
-      cHand1 = g_aHand.pVal[i].cStr;
-      cHand2 = g_aHand.pVal[j].cStr;
-      if (cmpHands(cHand1, cHand2) == 1) {
-        csTmp           = g_aHand.pVal[i];
-        g_aHand.pVal[i] = g_aHand.pVal[j];
-        g_aHand.pVal[j] = csTmp;
-
-        myTmp          = g_aBid.pVal[i];
-        g_aBid.pVal[i] = g_aBid.pVal[j];
-        g_aBid.pVal[j] = myTmp;
-      }
+  while (myNode != myZZZ) {
+    // Hop along to the next node.
+    if (g_aRLs.pVal[myRL] == RL_LEFT) {
+      i = getNodeIndex(myNode);
+      myNode = g_aNodes.pVal[i].myLeft;
+      // printf("Left(1):   Jump to node %"MY" (%"MY")\n", myNode, i);
     }
-  }
-}
+    else {
+      i = getNodeIndex(myNode);
+      myNode = g_aNodes.pVal[i].myRight;
+      // printf("Right(0):  Jump to node %"MY" (%"MY")\n", myNode, i);
+    }
 
-//******************************************************************************
-my getRankedBidsSum(void) {
-  my myResult = 0;
-  my myRank   = 0;
-
-  for (int i = 0; i < g_aHand.sCount; ++i) {
-    myRank = g_aHand.sCount - i;
-    myResult += g_aBid.pVal[i] * myRank;
-
-    printf("Result so far %5"MY": ", myResult);
-    printf("Hand %s Bid %"MY": Rank: %"MY"\n",
-           g_aHand.pVal[i].cStr, g_aBid.pVal[i], myRank);
+    ++myHops;
+    incRL(&myRL);
   }
 
-  return myResult;
+  return myHops;
 }
 
 
@@ -218,17 +170,16 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  daInit(cstr, g_aHand);
-  daInit(my,   g_aBid);
+  daInit(t_node, g_aNodes);
+  daInit(my, g_aRLs);
 
   populateArrays(&dacsLines);
 
-  sortHands();
-  myAnswer = getRankedBidsSum();
+  myAnswer = getHopsToZZZ();
   prtVar("%"MY, myAnswer);
 
-  daFreeEx(g_aHand, cStr);
-  daFree(g_aBid);
+  daFree(g_aNodes);
+  daFree(g_aRLs);
 
   return EXIT_SUCCESS;
 }
