@@ -117,14 +117,6 @@ void populateArrays(t_array(cstr)* pdacsLines) {
   rxFreeMatcher(&tRxNode);
 }
 
-// //******************************************************************************
-// my getNodeIndex(my myNode) {
-//   for (my i = 0; i < g_aNodes.sCount; ++i)
-//     if (myNode == g_aNodes.pVal[i].myNo)
-//       return i;
-//   return -1;
-// }
-
 //******************************************************************************
 //* Next RL value. Loop if it's the end.
 void incRL(my* pmyRL) {
@@ -143,14 +135,14 @@ my getHopsToZZZ(void) {
   while (myNode != myZZZ) {
     // Hop along to the next node.
     if (g_aRLs.pVal[myRL] == RL_LEFT) {
-// printf("Left (%i): Jump to node %"MY" ", RL_LEFT, myNode);
+printf("Left (%i): Jump to node %"MY" ", RL_LEFT, myNode);
       myNode = g_aNodes.pVal[myNode].myLeft;
-// printf("(%"MY")\n", myNode);
+printf("(%"MY")\n", myNode);
     }
     else {
-// printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, myNode);
+printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, myNode);
       myNode = g_aNodes.pVal[myNode].myRight;
-// printf("(%"MY")\n", myNode);
+printf("(%"MY")\n", myNode);
     }
 
     ++myHops;
