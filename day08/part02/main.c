@@ -147,28 +147,52 @@ void incRL(my* pmyRL) {
 }
 
 //******************************************************************************
+void geAllANodes(t_array(my)* paNode) {
+  for (my i = 0; i < g_aNodes.sCount; ++i) {
+    if (g_aNodes.pVal[i].myType == ND_A)
+      daAdd(my, (*paNode), i);
+  }
+}
+
+//******************************************************************************
+int allNodesAtZ(t_array(my)* paNode) {
+  for (my i = 0; i < paNode->sCount; ++i) {
+    if (g_aNodes.pVal[paNode->pVal[i]].myType != ND_Z)
+      return 0;
+  }
+  return 1;
+}
+
+//******************************************************************************
 my getHopsToAllZZZs(void) {
-  my myZZZ  = node2MyInt("ZZZ");
   my myHops = 0;
   my myRL   = 0;
-  my myNode = 0;
+  my i      = 0;
 
-  while (myNode != myZZZ) {
-    // Hop along to the next node.
-    if (g_aRLs.pVal[myRL] == RL_LEFT) {
-printf("Left (%i): Jump to node %"MY" ", RL_LEFT, myNode);
-      myNode = g_aNodes.pVal[myNode].myLeft;
-printf("(%"MY")\n", myNode);
-    }
-    else {
-printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, myNode);
-      myNode = g_aNodes.pVal[myNode].myRight;
-printf("(%"MY")\n", myNode);
-    }
+  t_array(my) aNode = {0};
+  daInit(my, aNode);
 
+  // Hop along to the next node.
+  geAllANodes(&aNode);
+  while (! allNodesAtZ(&aNode)) {
+    for (i = 0; i < aNode.sCount; ++i) {
+// printf("i = %"MY": ", i);
+      if (g_aRLs.pVal[myRL] == RL_LEFT) {
+// printf("Left (%i): Jump to node %"MY" ", RL_LEFT, aNode.pVal[i]);
+        aNode.pVal[i] = g_aNodes.pVal[aNode.pVal[i]].myLeft;
+// printf("(%"MY")\n", aNode.pVal[i]);
+      }
+      else {
+// printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, aNode.pVal[i]);
+        aNode.pVal[i] = g_aNodes.pVal[aNode.pVal[i]].myRight;
+// printf("(%"MY")\n", aNode.pVal[i]);
+      }
+    }
     ++myHops;
     incRL(&myRL);
   }
+
+  daFree(aNode);
 
   return myHops;
 }
@@ -195,8 +219,8 @@ int main(int argc, char* argv[]) {
 
   populateArrays(&dacsLines);
 
-  // myAnswer = getHopsToAllZZZs();
-  // prtVar("%"MY, myAnswer);
+  myAnswer = getHopsToAllZZZs();
+  prtVar("%"MY, myAnswer);
 
   daFree(g_aNodes);
   daFree(g_aRLs);
