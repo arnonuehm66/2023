@@ -1,1 +1,14 @@
-
+// Need to quick solve the problem. ;o)
+function ggt(m,n)
+{
+    if (n==0)
+        return m;
+    else
+        return ggt(n, m%n);
+}
+function kgv(m,n)
+{
+    o = ggt(m,n);
+    p = (m * n) / o;
+    return p;
+}
