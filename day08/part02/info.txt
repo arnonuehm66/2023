@@ -1,14 +1,37 @@
-// Need to quick solve the problem. ;o)
-function ggt(m,n)
-{
-    if (n==0)
-        return m;
-    else
-        return ggt(n, m%n);
+#include <stdio.h>
+
+// Funktion zur Berechnung des kgV von zwei Zahlen
+int kgV(int a, int b) {
+    int max = (a > b) ? a : b;
+    int result = max;
+
+    while (1) {
+        if (result % a == 0 && result % b == 0) {
+            return result;
+        }
+        result += max;
+    }
 }
-function kgv(m,n)
-{
-    o = ggt(m,n);
-    p = (m * n) / o;
-    return p;
+
+// Funktion zur Berechnung des kgV von mehr als zwei Zahlen
+int kgV_mehrere(int arr[], int n) {
+    int result = arr[0];
+
+    for (int i = 1; i < n; i++) {
+        result = kgV(result, arr[i]);
+    }
+
+    return result;
 }
+
+int main() {
+    int arr[] = {12, 60, 150, 210};
+    int n = sizeof(arr) / sizeof(arr[0]);
+
+    int result = kgV_mehrere(arr, n);
+
+    printf("Das kleinste gemeinsame Vielfache ist: %d\n", result);
+
+    return 0;
+}
+

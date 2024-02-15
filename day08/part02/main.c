@@ -155,46 +155,81 @@ void geAllANodes(t_array(my)* paNode) {
 }
 
 //******************************************************************************
-int allNodesAtZ(t_array(my)* paNode) {
-  for (my i = 0; i < paNode->sCount; ++i) {
-    if (g_aNodes.pVal[paNode->pVal[i]].myType != ND_Z)
-      return 0;
-  }
-  return 1;
+int isNodeAtZ(my myNode) {
+  if (g_aNodes.pVal[myNode].myType == ND_Z)
+    return 1;
+  return 0;
 }
 
 //******************************************************************************
-my getHopsToAllZZZs(void) {
+my getHopsToTisZ(my myNodeA) {
   my myHops = 0;
   my myRL   = 0;
-  my i      = 0;
+  my myNode = myNodeA;
 
-  t_array(my) aNode = {0};
-  daInit(my, aNode);
-
-  // Hop along to the next node.
-  geAllANodes(&aNode);
-  while (! allNodesAtZ(&aNode)) {
-    for (i = 0; i < aNode.sCount; ++i) {
-// printf("i = %"MY": ", i);
-      if (g_aRLs.pVal[myRL] == RL_LEFT) {
-// printf("Left (%i): Jump to node %"MY" ", RL_LEFT, aNode.pVal[i]);
-        aNode.pVal[i] = g_aNodes.pVal[aNode.pVal[i]].myLeft;
-// printf("(%"MY")\n", aNode.pVal[i]);
-      }
-      else {
-// printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, aNode.pVal[i]);
-        aNode.pVal[i] = g_aNodes.pVal[aNode.pVal[i]].myRight;
-// printf("(%"MY")\n", aNode.pVal[i]);
-      }
+// Hop along from starting node to the corresponding last.
+  while (! isNodeAtZ(myNode)) {
+    if (g_aRLs.pVal[myRL] == RL_LEFT) {
+      printf("Left (%i): Jump to node %"MY" ", RL_LEFT, myNode);
+      myNode = g_aNodes.pVal[myNode].myLeft;
+      printf("(%"MY")\n", myNode);
     }
+    else {
+      printf("Right(%i): Jump to node %"MY" ", RL_RIGHT, myNode);
+      myNode = g_aNodes.pVal[myNode].myRight;
+      printf("(%"MY")\n", myNode);
+    }
+
     ++myHops;
     incRL(&myRL);
   }
 
-  daFree(aNode);
-
   return myHops;
+}
+
+//******************************************************************************
+my getLCM(my a, my b) {
+  my max    = (a > b) ? a : b;
+  my result = max;
+  while (! (result % a == 0 && result % b == 0)) result += max;
+  return result;
+}
+
+//******************************************************************************
+my getHopsLCM(t_array(my)* paHops) {
+  my myHopsLCM = paHops->pVal[0];
+  if (paHops->sCount == 1) return myHopsLCM;
+  for (my i = 0; i < paHops->sCount; ++i)
+    myHopsLCM = getLCM(myHopsLCM, paHops->pVal[i]);
+  return myHopsLCM;
+}
+
+//******************************************************************************
+my getHopsToAllZZZs(void) {
+  t_array(my) aNodeA    = {0};
+  t_array(my) aHops     = {0};
+  my          myHops    = 0;
+  my          myHopsLCM = 0;
+
+  daInit(my, aNodeA);
+  daInit(my, aHops);
+
+  geAllANodes(&aNodeA);
+
+  for (my i = 0; i < aNodeA.sCount; ++i) {
+    myHops = getHopsToTisZ(aNodeA.pVal[i]);
+    daAdd(my, aHops, myHops);
+    printf("Hops[%"MY"] = %"MY"\n", i, myHops);
+    prtHl("-", 20);
+  }
+  prtHl("-", 40);
+
+  myHopsLCM = getHopsLCM(&aHops);
+
+  daFree(aNodeA);
+  daFree(aHops);
+
+  return myHopsLCM;
 }
 
 
