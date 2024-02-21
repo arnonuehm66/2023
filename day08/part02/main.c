@@ -23,16 +23,16 @@ typedef unsigned long long my;
 s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 
-typedef struct s_node {
+typedef struct s_numLine {
   my myType;    // Is a start (A) oder end (Z) node.
   my myRight;   // Next node number to the Right.
   my myLeft;    // Next node number to the Left.
-} t_node;
+} t_numLine;
 
-s_array(t_node);
-t_array(t_node) g_aNodes;
-t_array(my)     g_aRLs;
-t_array(my)     g_aStartNodes;
+s_array(t_numLine);
+t_array(t_numLine) g_aNodes;
+t_array(my)        g_aRLs;
+t_array(my)        g_aStartNodes;
 
 
 //******************************************************************************
@@ -83,7 +83,7 @@ my getType(char* pcNode) {
 void populateArrays(t_array(cstr)* pdacsLines) {
   t_rx_matcher tRxRL   = {0};
   t_rx_matcher tRxNode = {0};
-  t_node       tNode   = {MY_MAX, MY_MAX, MY_MAX};
+  t_numLine       tNode   = {MY_MAX, MY_MAX, MY_MAX};
   char*        cNode   = NULL;
   my           myType  = 0;
   my           myNode  = 0;
@@ -92,7 +92,7 @@ void populateArrays(t_array(cstr)* pdacsLines) {
   // Create ZZZ entries to array to let offset its node number.
   // Fill it with maxed out values for debugging purposes.
   for (my i = 0; i < myZZZ; ++i)
-    daAdd(t_node, g_aNodes, tNode);
+    daAdd(t_numLine, g_aNodes, tNode);
 
   // LLR
   rxInitMatcher(&tRxRL, "(R|L)", "", NULL);
@@ -249,7 +249,7 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  daInit(t_node, g_aNodes);
+  daInit(t_numLine, g_aNodes);
   daInit(my, g_aRLs);
 
   populateArrays(&dacsLines);
