@@ -53,7 +53,7 @@ void getLineNos(my myLine, t_array(my)* pArray) {
 
   daClear(my, (*pArray));
 
-  rxInitMatcher(&tRxNum, "(\\d+)", "", NULL);
+  rxInitMatcher(&tRxNum, "(-?\\d+)", "", NULL);
 
   while (rxMatch(&tRxNum, RX_KEEP_POS, cLine, RX_LEN_MAX, NULL, NULL)) {
     myNum = toMyInt(tRxNum.dacsMatch.pVal[1].cStr);
@@ -90,33 +90,33 @@ int getDiffs(t_array(my)* paDiffOld, t_array(my)* paDiffNew) {
 
 //******************************************************************************
 my getLineSum(my myLine) {
-  t_array(my) aDiffOld = {0};
+  t_array(my) aDiffCur = {0};
   t_array(my) aDiffNew = {0};
   t_array(my) aDiffTmp = {0};
   my          myLastNo = 0;
   my          mySum    = 0;
   int         iIsZero  = 0;
 
-  daInit(my, aDiffOld);
+  daInit(my, aDiffCur);
   daInit(my, aDiffNew);
 
   // Get current line to starting array.
-  getLineNos(myLine, &aDiffOld);
+  getLineNos(myLine, &aDiffCur);
 
   while (! iIsZero) {
-    printMyArray(myLine, &aDiffOld);
+    printMyArray(myLine, &aDiffCur);
 
-    iIsZero   = getDiffs(&aDiffOld, &aDiffNew);
-    myLastNo  = aDiffOld.pVal[aDiffOld.sCount - 1];
+    iIsZero   = getDiffs(&aDiffCur, &aDiffNew);
+    myLastNo  = aDiffCur.pVal[aDiffCur.sCount - 1];
     mySum    += myLastNo;
 
-    aDiffTmp = aDiffOld;
-    aDiffOld = aDiffNew;
+    aDiffTmp = aDiffCur;
+    aDiffCur = aDiffNew;
     aDiffNew = aDiffTmp;
   }
-  printMyArray(myLine, &aDiffOld);
+  printMyArray(myLine, &aDiffCur);
 
-  daFree(aDiffOld);
+  daFree(aDiffCur);
   daFree(aDiffNew);
 
   return mySum;
