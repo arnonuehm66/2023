@@ -7,10 +7,18 @@
 #include "../../libs/c_dynamic_arrays_macros.h"
 
 
-// Integer settings.
-typedef long long my;
-#define MY     "lli"
-#define MY_MAX (~0)
+//*** Integer settings. ********************************************************
+// #define IS_UNSIGNED
+#ifdef IS_UNSIGNED
+  typedef unsigned long long my;
+  #define MY     "llu"
+  #define MY_MAX (~0)
+#else
+  typedef long long my;
+  #define MY     "lli"
+  #define MY_MAX LONG_MAX
+#endif
+//*** Integer settings. ********************************************************
 
 #define ERR_FILE -1
 
@@ -22,7 +30,11 @@ t_array(cstr) g_aLines;
 
 //******************************************************************************
 my toMyInt(const char* pcNumber) {
+#ifdef IS_UNSIGNED
+  my myNumber = strtoull(pcNumber ,NULL, 10);
+#else
   my myNumber = strtoll(pcNumber ,NULL, 10);
+#endif
   return myNumber;
 }
 
@@ -46,7 +58,7 @@ my getLinesFromFile(const char* filename) {
 }
 
 //******************************************************************************
-void getLineNos(my myLine, t_array(my)* pArray) {
+void getValuesToArray(my myLine, t_array(my)* pArray) {
   t_rx_matcher tRxNum = {0};
   char*        cLine  = g_aLines.pVal[myLine].cStr;
   my           myNum  = 0;
@@ -73,80 +85,12 @@ void printMyArray(my myNo, t_array(my)* paArray) {
 }
 
 //******************************************************************************
-int getDiffs(t_array(my)* paDiffOld, t_array(my)* paDiffNew) {
-  my  myDiff  = 0;
-  int fIsZero = 1;
-
-  daClear(my, (*paDiffNew));
-
-  for (my i = 0; i < paDiffOld->sCount - 1; ++i) {
-    myDiff = paDiffOld->pVal[i + 1] - paDiffOld->pVal[i];
-    if (myDiff != 0) fIsZero = 0;
-    daAdd(my, (*paDiffNew), myDiff);
-  }
-
-  return fIsZero;
-}
-
-//******************************************************************************
-my getLineSum(my myLine) {
-  t_array(my) aDiffCur = {0};
-  t_array(my) aDiffNew = {0};
-  t_array(my) aDiffTmp = {0};
-  t_array(my) aFirstNo = {0};
-  my          mySum    = 0;
-  int         fIsZero  = 0;
-
-  daInit(my, aDiffCur);
-  daInit(my, aDiffNew);
-  daInit(my, aFirstNo);
-
-  // Get current line to starting array.
-  getLineNos(myLine, &aDiffCur);
-
-  while (! fIsZero) {
-    printMyArray(myLine, &aDiffCur);
-
-    fIsZero = getDiffs(&aDiffCur, &aDiffNew);
-    daAdd(my, aFirstNo, aDiffCur.pVal[0]);
-
-    aDiffTmp = aDiffCur;
-    aDiffCur = aDiffNew;
-    aDiffNew = aDiffTmp;
-  }
-  daAdd(my, aFirstNo, 0);
-  printMyArray(myLine, &aDiffCur);
-
-  // Sanity check.
-  if (aFirstNo.sCount - 2 < 0) goto free_n_exit;
-
-  // Calc sum of firsts at the end of the 'diff-run'.
-  // 4  3  2  1  0
-  // 0  2  0  3 10
-  // -  2 -2  5  5
-  printf("---\n||");
-  for(my i = aFirstNo.sCount - 1; i > 0; --i) {
-    printf("No[%"MY"] = %"MY" -> ", i, aFirstNo.pVal[i]);
-    mySum = aFirstNo.pVal[i - 1] - mySum;
-    printf("%"MY"||", mySum);
-  }
-  printf("\n---\n");
-
-free_n_exit:
-  daFree(aDiffCur);
-  daFree(aDiffNew);
-  daFree(aFirstNo);
-
-  return mySum;
-}
-
-//******************************************************************************
 my getAnswer(void) {
   my myPartSum = 0;
   my mySum     = 0;
 
   for (my i = 0; i < g_aLines.sCount; ++i) {
-    myPartSum  = getLineSum(i);
+    // myPartSum  = getLineSum(i);
     mySum     += myPartSum;
     printf("Sum = %"MY" => %"MY"\n", myPartSum, mySum);
     prtHl("-", 80);

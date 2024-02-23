@@ -46,7 +46,7 @@ my getLinesFromFile(const char* filename) {
 }
 
 //******************************************************************************
-void getLineNos(my myLine, t_array(my)* pArray) {
+void getValuesToArray(my myLine, t_array(my)* pArray) {
   t_rx_matcher tRxNum = {0};
   char*        cLine  = g_aLines.pVal[myLine].cStr;
   my           myNum  = 0;
@@ -102,7 +102,7 @@ my getLineSum(my myLine) {
   daInit(my, aFirstNo);
 
   // Get current line to starting array.
-  getLineNos(myLine, &aDiffCur);
+  getValuesToArray(myLine, &aDiffCur);
 
   while (! fIsZero) {
     printMyArray(myLine, &aDiffCur);
