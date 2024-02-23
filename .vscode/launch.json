@@ -10,7 +10,7 @@
       "request": "launch",
       // "program": "${workspaceFolder}/day02/part01/main",
       // "args": ["testdata.txt", "12", "13", "14"],
-      "program": "${workspaceFolder}/day09/part01/main",
+      "program": "${workspaceFolder}/day10/part01/main",
       "args": ["testdata2.txt"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
