@@ -57,33 +57,6 @@ my getLinesFromFile(const char* filename) {
 }
 
 //******************************************************************************
-void getValuesToArray(my myLine, t_array(my)* pArray) {
-  t_rx_matcher tRxNum = {0};
-  char*        cLine  = g_aLines.pVal[myLine].cStr;
-  my           myNum  = 0;
-
-  daClear(my, (*pArray));
-
-  rxInitMatcher(&tRxNum, "(-?\\d+)", "", NULL);
-
-  while (rxMatch(&tRxNum, RX_KEEP_POS, cLine, RX_LEN_MAX, NULL, NULL)) {
-    myNum = toMyInt(tRxNum.dacsMatch.pVal[1].cStr);
-    daAdd(my, (*pArray), myNum);
-  }
-
-  rxFreeMatcher(&tRxNum);
-}
-
-//******************************************************************************
-void printMyArray(my myNo, t_array(my)* paArray) {
-  printf("%"MY": ", myNo);
-  for (my i = 0; i < paArray->sCount; ++i) {
-    printf("%5"MY" ", paArray->pVal[i]);
-  }
-  printf("\n");
-}
-
-//******************************************************************************
 void findStartingPoint(my* pmyStartX, my* pmyStartY) {
   for (my y = 0; y < g_aLines.sCount; ++y) {
     for (my x = 0; x < g_aLines.pVal[y].len; ++x) {
@@ -97,7 +70,23 @@ void findStartingPoint(my* pmyStartX, my* pmyStartY) {
 }
 
 //******************************************************************************
-void nextStep(my myLastX, my myLastY, my* pmyX, my* pmyY) {
+// Short cut if functions
+int isUp(const char up) {
+  return (up    == '|' || up    == 'F' || up    == '7' || up    == 'S');
+}
+int isDown(const char down) {
+  return (down  == '|' || down  == 'J' || down  == 'L' || down  == 'S');
+}
+int isLeft(const char left) {
+  return (left  == '-' || left  == 'L' || left  == 'F' || left  == 'S');
+}
+int isRight(const char right) {
+  return (right == '-' || right == '7' || right == 'J' || right == 'S');
+}
+
+
+//******************************************************************************
+void nextStep(my* pmyLastX, my* pmyLastY, my* pmyX, my* pmyY) {
   my   X     = *pmyX;
   my   Y     = *pmyY;
   my   max   = g_aLines.pVal[Y].len - 1;
@@ -107,105 +96,79 @@ void nextStep(my myLastX, my myLastY, my* pmyX, my* pmyY) {
   char left  = (X > 0)   ? g_aLines.pVal[Y].cStr[X - 1] : '.';
   char right = (X < max) ? g_aLines.pVal[Y].cStr[X + 1] : '.';
 
+  t_array(my) aX;
+  t_array(my) aY;
+
+  daInit(my, aX);
+  daInit(my, aY);
+
+  // Find all possible ways.
+
   // .|.  .F.  .7.
   // -S-  LS7  FSJ
   // .|.  .J.  .L.
   if (C == 'S') {
-    if (up == '|' || up == 'F' || up == '7') {
-      *pmyY = Y - 1;
-      return;
-    }
-    if (down == '|' || down == 'J' || down == 'L') {
-      *pmyY = Y + 1;
-      return;
-    }
-    if (left == '-' || left == 'L' || left == 'F') {
-      *pmyX = X - 1;
-      return;
-    }
-    if (right == '-' || right == '7' || right == 'J') {
-      *pmyX = X + 1;
-      return;
-    }
+    if (isUp(up))       { daAdd(my, aX, X);     daAdd(my, aY, Y - 1); }
+    if (isDown(down))   { daAdd(my, aX, X);     daAdd(my, aY, Y + 1); }
+    if (isLeft(left))   { daAdd(my, aX, X - 1); daAdd(my, aY, Y);     }
+    if (isRight(right)) { daAdd(my, aX, X + 1); daAdd(my, aY, Y);     }
   }
   // ... ... ...
   // .F- .F7 .FJ
   // .|. .J. .L.
   if (C == 'F') {
-    if (down == '|' || down == 'J' || down == 'L') {
-      *pmyY = Y + 1;
-      return;
-    }
-    if (right == '-' || right == '7' || right == 'J') {
-      *pmyX = X + 1;
-      return;
-    }
+    if (isDown(down))   { daAdd(my, aX, X);     daAdd(my, aY, Y + 1); }
+    if (isRight(right)) { daAdd(my, aX, X + 1); daAdd(my, aY, Y);     }
   }
   // ...  ...  ...
   // -7.  L7.  F7.
   // .|.  .J.  .L.
   if (C == '7') {
-    if (down == '|' || down == 'J' || down == 'L') {
-      *pmyY = Y + 1;
-      return;
-    }
-    if (left == '-' || left == 'L' || left == 'F') {
-      *pmyX = X - 1;
-      return;
-    }
+    if (isDown(down))   { daAdd(my, aX, X);     daAdd(my, aY, Y + 1); }
+    if (isLeft(left))   { daAdd(my, aX, X - 1); daAdd(my, aY, Y);     }
   }
   // .|.  .F.  .7.
   // -J.  LJ.  FJ.
   // ...  ...  ...
   if (C == 'J') {
-    if (up == '|' || up == 'F' || up == '7') {
-      *pmyY = Y - 1;
-      return;
-    }
-    if (left == '-' || left == 'L' || left == 'F') {
-      *pmyX = X - 1;
-      return;
-    }
+    if (isUp(up))       { daAdd(my, aX, X);     daAdd(my, aY, Y - 1); }
+    if (isLeft(left))   { daAdd(my, aX, X - 1); daAdd(my, aY, Y);     }
   }
   // .|.  .F.  .7.
   // .L-  .L7  .LJ
   // ...  ...  ...
   if (C == 'L') {
-    if (up == '|' || up == 'F' || up == '7') {
-      *pmyY = Y - 1;
-      return;
-    }
-    if (right == '-' || right == '7' || right == 'J') {
-      *pmyX = X + 1;
-      return;
-    }
+    if (isUp(up))       { daAdd(my, aX, X);     daAdd(my, aY, Y - 1); }
+    if (isRight(right)) daAdd(my, aX, X + 1);
   }
   // .|.  .F.  .7.
   // .|.  .|.  .|.
   // .|.  .J.  .L.
   if (C == '|') {
-    if (up == '|' || up == 'F' || up == '7') {
-      *pmyY = Y - 1;
-      return;
-    }
-    if (down == '|' || down == 'J' || down == 'L') {
-      *pmyY = Y + 1;
-      return;
-    }
+    if (isUp(up))       { daAdd(my, aX, X);     daAdd(my, aY, Y - 1); }
+    if (isDown(down))   daAdd(my, aY, Y + 1);
   }
   // ...  ...  ...
   // ---  L-7  F-J
   // ...  ...  ...
-  if (C == 'S') {
-    if (left == '-' || left == 'L' || left == 'F') {
-      *pmyX = X - 1;
-      return;
-    }
-    if (right == '-' || right == '7' || right == 'J') {
-      *pmyX = X + 1;
-      return;
+  if (C == '-') {
+    if (isLeft(left))   { daAdd(my, aX, X - 1); daAdd(my, aY, Y);     }
+    if (isRight(right)) { daAdd(my, aX, X + 1); daAdd(my, aY, Y);     }
+  }
+
+  // Distinct between way to go and way you came from.
+  for (my i = 0; i < aX.sCount; ++i) {
+    if (*pmyLastX != aX.pVal[i] || *pmyLastY != aY.pVal[i]) {
+      *pmyX = aX.pVal[i];
+      *pmyY = aY.pVal[i];
     }
   }
+
+  *pmyLastX = X;
+  *pmyLastY = Y;
+
+  daFree(aX);
+  daFree(aY);
 }
 
 //******************************************************************************
@@ -213,8 +176,8 @@ my getAnswer(void) {
   my  myCount  = 0;
   my  myStartX = 0;
   my  myStartY = 0;
-  my  myLastX  = 0;
-  my  myLastY  = 0;
+  my  myLastX  = -1;
+  my  myLastY  = -1;
   my  myX      = 0;
   my  myY      = 0;
   int fIsEnd   = 0;
@@ -222,17 +185,15 @@ my getAnswer(void) {
   findStartingPoint(&myStartX, &myStartY);
   myX = myStartX;
   myY = myStartY;
-  printf("Start(y, x) = (%"MY", %"MY")\n", myY, myX);
+  ++myCount;
+  printf("%"MY": Start(y, x) = (%"MY", %"MY")\n", myCount, myY, myX);
 
   // Step through maze until back at start.
   while (! fIsEnd) {
-    nextStep(myLastX, myLastY, &myX, &myY);
-    printf("Next(y, x) = (%"MY", %"MY")\n", myY, myX);
-    if (myX == myStartX && myY == myStartY)
-      fIsEnd = 1;
-    myLastX = myX;
-    myLastY = myY;
+    nextStep(&myLastX, &myLastY, &myX, &myY);
     ++myCount;
+    printf("%"MY":  Next(y, x) = (%"MY", %"MY")\n", myCount, myY, myX);
+    if (myX == myStartX && myY == myStartY) fIsEnd = 1;
   }
 
   return myCount / 2;
