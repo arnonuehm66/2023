@@ -139,14 +139,14 @@ void nextStep(my* pmyLastX, my* pmyLastY, my* pmyX, my* pmyY) {
   // ...  ...  ...
   if (C == 'L') {
     if (isUp(up))       { daAdd(my, aX, X);     daAdd(my, aY, Y - 1); }
-    if (isRight(right)) daAdd(my, aX, X + 1);
+    if (isRight(right)) { daAdd(my, aX, X + 1); daAdd(my, aY, Y);     }
   }
   // .|.  .F.  .7.
   // .|.  .|.  .|.
   // .|.  .J.  .L.
   if (C == '|') {
     if (isUp(up))       { daAdd(my, aX, X);     daAdd(my, aY, Y - 1); }
-    if (isDown(down))   daAdd(my, aY, Y + 1);
+    if (isDown(down))   { daAdd(my, aX, X);     daAdd(my, aY, Y + 1); }
   }
   // ...  ...  ...
   // ---  L-7  F-J
