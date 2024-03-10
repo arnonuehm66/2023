@@ -90,7 +90,7 @@ void nextStep(my* pmyLastX, my* pmyLastY, my* pmyX, my* pmyY) {
   my   X     = *pmyX;
   my   Y     = *pmyY;
   my   xMax  = g_aLines.pVal[Y].len - 1;
-  my   yMax  = g_aLines.sCount;
+  my   yMax  = g_aLines.sCount - 1;
   char C     = g_aLines.pVal[Y].cStr[X];
   char up    = (Y > 0)    ? g_aLines.pVal[Y - 1].cStr[X] : '.';
   char down  = (Y < yMax) ? g_aLines.pVal[Y + 1].cStr[X] : '.';
@@ -188,14 +188,14 @@ void walkThePipesIntoArrays(t_array(my)* pmyXs, t_array(my)* pmyYs) {
   myY = myStartY;
   daAdd(my, (*pmyXs), myX);
   daAdd(my, (*pmyYs), myY);
-  printf("%"MY": Start(y, x) = (%"MY", %"MY")\n", myCount, myY, myX);
+  printf("%"MY": Start(y, x) = (%"MY", %"MY")\n", myCount++, myY, myX);
 
   // Step through maze until back at start.
   while (! fIsEnd) {
     nextStep(&myLastX, &myLastY, &myX, &myY);
     daAdd(my, (*pmyXs), myX);
     daAdd(my, (*pmyYs), myY);
-    printf("%"MY":  Next(y, x) = (%"MY", %"MY")\n", myCount, myY, myX);
+    printf("%"MY":  Next(y, x) = (%"MY", %"MY")\n", myCount++, myY, myX);
     if (myX == myStartX && myY == myStartY) fIsEnd = 1;
   }
 }
@@ -207,8 +207,8 @@ void clearRestOfTheMaze(t_array(my)* pmyXs, t_array(my)* pmyYs) {
   my  aMax    = pmyXs->sCount;
   int isEmpty = 0;
 
-  for (my x = 0; x < xMax; ++x) {
-    for (my y = 0; y < yMax; ++y) {
+  for (my y = 0; y < yMax; ++y) {
+    for (my x = 0; x < xMax; ++x) {
       // Are these coordinates empty (or a valid pipe)?
       isEmpty = 1;
       for (my a = 0; a < aMax; ++a) {
@@ -216,8 +216,8 @@ void clearRestOfTheMaze(t_array(my)* pmyXs, t_array(my)* pmyYs) {
           isEmpty = 0;
           break;
         }
-        if (isEmpty) g_aLines.pVal[y].cStr[x] = '.';
       }
+      if (isEmpty) g_aLines.pVal[y].cStr[x] = '.';
       // Are these coordinates empty (or a valid pipe)?
     }
   }
@@ -228,12 +228,49 @@ void printMaze(void) {
   my xMax = g_aLines.pVal[0].len;
   my yMax = g_aLines.sCount;
 
-  for (my x = 0; x < xMax; ++x) {
-    for (my y = 0; y < yMax; ++y) {
+  for (my y = 0; y < yMax; ++y) {
+    for (my x = 0; x < xMax; ++x) {
       printf("%c", g_aLines.pVal[y].cStr[x]);
     }
     printf("\n");
   }
+}
+
+//******************************************************************************
+my getAllInsides(void) {
+  my    xMax       = g_aLines.pVal[0].len;
+  my    yMax       = g_aLines.sCount;
+  float fWallCount = 0.0; //0.5; // S temporary is F
+  my    isIn       = 0;
+  my    myCount    = 0;
+
+  for (my y = 0; y < yMax; ++y) {
+    for (my x = 0; x < xMax; ++x) {
+
+      if (fWallCount == 0.0) continue;
+
+      if (g_aLines.pVal[y].cStr[x] == '|') {
+        if (fWallCount >= 0.0) fWallCount += 1.0;
+        if (fWallCount < 0.0) fWallCount -= 1.0;
+      }
+      if (g_aLines.pVal[y].cStr[x] == 'F') fWallCount += 0.5;
+      if (g_aLines.pVal[y].cStr[x] == '7') fWallCount -= 0.5;
+      if (g_aLines.pVal[y].cStr[x] == 'J') fWallCount += 0.5;
+      if (g_aLines.pVal[y].cStr[x] == 'L') fWallCount -= 0.5;
+
+      isIn = ((int) fWallCount % 2) ? 0 : 1;
+
+      if (isIn && g_aLines.pVal[y].cStr[x] == '.') {
+        g_aLines.pVal[y].cStr[x] = '1';
+        ++myCount;
+      }
+
+      if (! isIn && g_aLines.pVal[y].cStr[x] == '.') {
+        g_aLines.pVal[y].cStr[x] = '0';
+      }
+    }
+  }
+  return myCount;
 }
 
 //******************************************************************************
@@ -249,9 +286,9 @@ my getAnswer(void) {
   walkThePipesIntoArrays(&myXs, &myYs);
   clearRestOfTheMaze(&myXs, &myYs);
 
-  printMaze();
+  myCount = getAllInsides();
 
-  // myCount = getAllInsides(&myXs, &myYs);
+  printMaze();
 
   daFree(myXs);
   daFree(myYs);

@@ -89,12 +89,13 @@ int isRight(const char right) {
 void nextStep(my* pmyLastX, my* pmyLastY, my* pmyX, my* pmyY) {
   my   X     = *pmyX;
   my   Y     = *pmyY;
-  my   max   = g_aLines.pVal[Y].len - 1;
+  my   xMax  = g_aLines.pVal[Y].len - 1;
+  my   yMax  = g_aLines.sCount - 1;
   char C     = g_aLines.pVal[Y].cStr[X];
-  char up    = (Y > 0)   ? g_aLines.pVal[Y - 1].cStr[X] : '.';
-  char down  = (Y < max) ? g_aLines.pVal[Y + 1].cStr[X] : '.';
-  char left  = (X > 0)   ? g_aLines.pVal[Y].cStr[X - 1] : '.';
-  char right = (X < max) ? g_aLines.pVal[Y].cStr[X + 1] : '.';
+  char up    = (Y > 0)    ? g_aLines.pVal[Y - 1].cStr[X] : '.';
+  char down  = (Y < yMax) ? g_aLines.pVal[Y + 1].cStr[X] : '.';
+  char left  = (X > 0)    ? g_aLines.pVal[Y].cStr[X - 1] : '.';
+  char right = (X < xMax) ? g_aLines.pVal[Y].cStr[X + 1] : '.';
 
   t_array(my) aX;
   t_array(my) aY;
