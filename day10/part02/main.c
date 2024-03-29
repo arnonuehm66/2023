@@ -22,6 +22,11 @@
 
 #define ERR_FILE -1
 
+#define IS_UP    0x01
+#define IS_DOWN  0x02
+#define IS_LEFT  0x03
+#define IS_RIGHT 0x04
+
 s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 
@@ -224,10 +229,53 @@ void clearRestOfTheMaze(t_array(my)* pmyXs, t_array(my)* pmyYs) {
 }
 
 //******************************************************************************
+my relativePos(my x0, my y0, my x1, my y1) {
+  if (x0     == x1 && y0 - 1 == y1) return IS_UP;
+  if (x0     == x1 && y0 + 1 == y1) return IS_DOWN;
+  if (x0 - 1 == x1 && y0     == y1) return IS_LEFT;
+  if (x0 + 1 == x1 && y0     == y1) return IS_RIGHT;
+  return 0;
+}
+
+//******************************************************************************
+void fillPipeIfTrue(my x, my y, my myFirstX, my myFirstY, my myLastX, my myLastY, int dir1, int dir2, char cPipe) {
+  if ((relativePos(x, y, myFirstX, myFirstY) == dir1 &&
+       relativePos(x, y, myLastX,  myLastY)  == dir2)
+      ||
+      (relativePos(x, y, myFirstX, myFirstY) == dir2 &&
+       relativePos(x, y, myLastX,  myLastY)  == dir1))
+    g_aLines.pVal[y].cStr[x] = cPipe;
+}
+
+//******************************************************************************
+void S2pipe(t_array(my)* pmyXs, t_array(my)* pmyYs) {
+  // S's coordinates are [0] and [-1].
+  // The two pipes connecting to S are [1] and [-2].
+  my x        = pmyXs->pVal[0];
+  my y        = pmyYs->pVal[0];
+  my myFirstX = pmyXs->pVal[1];
+  my myFirstY = pmyYs->pVal[1];
+  my myLastX  = pmyXs->pVal[pmyXs->sCount - 2];
+  my myLastY  = pmyYs->pVal[pmyYs->sCount - 2];
+
+  // Change S according to fist and last pipe.
+  // ... .|. ... ... .|. .|.
+  // .S- .S. -S. -S- .S- -S.
+  // .|. .|. .|. ... ... ...
+  fillPipeIfTrue(x, y, myFirstX, myFirstY, myLastX, myLastY, IS_DOWN,  IS_RIGHT, 'F');
+  fillPipeIfTrue(x, y, myFirstX, myFirstY, myLastX, myLastY, IS_DOWN,  IS_UP,    '|');
+  fillPipeIfTrue(x, y, myFirstX, myFirstY, myLastX, myLastY, IS_DOWN,  IS_LEFT,  '7');
+  fillPipeIfTrue(x, y, myFirstX, myFirstY, myLastX, myLastY, IS_RIGHT, IS_LEFT,  '-');
+  fillPipeIfTrue(x, y, myFirstX, myFirstY, myLastX, myLastY, IS_RIGHT, IS_UP,    'L');
+  fillPipeIfTrue(x, y, myFirstX, myFirstY, myLastX, myLastY, IS_LEFT,  IS_UP,    'J');
+}
+
+//******************************************************************************
 void printMaze(void) {
   my xMax = g_aLines.pVal[0].len;
   my yMax = g_aLines.sCount;
 
+  prtHl("-", 30);
   for (my y = 0; y < yMax; ++y) {
     for (my x = 0; x < xMax; ++x) {
       printf("%c", g_aLines.pVal[y].cStr[x]);
@@ -238,38 +286,32 @@ void printMaze(void) {
 
 //******************************************************************************
 my getAllInsides(void) {
-  my    xMax       = g_aLines.pVal[0].len;
-  my    yMax       = g_aLines.sCount;
-  float fWallCount = 0.0; //0.5; // S temporary is F
-  my    isIn       = 0;
-  my    myCount    = 0;
+  my xMax        = g_aLines.pVal[0].len;
+  my yMax        = g_aLines.sCount;
+  my myWallCount = 0;
+  my myCount     = 0;
 
   for (my y = 0; y < yMax; ++y) {
+    myWallCount = 0;
     for (my x = 0; x < xMax; ++x) {
-
-      if (fWallCount == 0.0) continue;
-
-      if (g_aLines.pVal[y].cStr[x] == '|') {
-        if (fWallCount >= 0.0) fWallCount += 1.0;
-        if (fWallCount < 0.0) fWallCount -= 1.0;
-      }
-      if (g_aLines.pVal[y].cStr[x] == 'F') fWallCount += 0.5;
-      if (g_aLines.pVal[y].cStr[x] == '7') fWallCount -= 0.5;
-      if (g_aLines.pVal[y].cStr[x] == 'J') fWallCount += 0.5;
-      if (g_aLines.pVal[y].cStr[x] == 'L') fWallCount -= 0.5;
-
-      isIn = ((int) fWallCount % 2) ? 0 : 1;
-
-      if (isIn && g_aLines.pVal[y].cStr[x] == '.') {
-        g_aLines.pVal[y].cStr[x] = '1';
-        ++myCount;
+      if (g_aLines.pVal[y].cStr[x] == '.') {
+        if (myWallCount % 2 == 0) {
+          g_aLines.pVal[y].cStr[x] = '0';
+        }
+        else {
+          g_aLines.pVal[y].cStr[x] = '1';
+          ++myCount;
+        }
       }
 
-      if (! isIn && g_aLines.pVal[y].cStr[x] == '.') {
-        g_aLines.pVal[y].cStr[x] = '0';
-      }
+      if (g_aLines.pVal[y].cStr[x] == 'F' ||
+          g_aLines.pVal[y].cStr[x] == '|')
+        ++myWallCount;
+      if (g_aLines.pVal[y].cStr[x] == '7')
+        --myWallCount;
     }
   }
+
   return myCount;
 }
 
@@ -285,9 +327,12 @@ my getAnswer(void) {
 
   walkThePipesIntoArrays(&myXs, &myYs);
   clearRestOfTheMaze(&myXs, &myYs);
+  printMaze();
+
+  S2pipe(&myXs, &myYs);
+  printMaze();
 
   myCount = getAllInsides();
-
   printMaze();
 
   daFree(myXs);
@@ -313,8 +358,9 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  prtHl("-", 80);
+  prtHl("-", 30);
   myAnswer = getAnswer();
+  prtHl("-", 30);
   prtVar("%"MY, myAnswer);
 
   daFree(g_aLines);
