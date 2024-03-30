@@ -22,11 +22,6 @@
 
 #define ERR_FILE -1
 
-#define IS_UP    0x01
-#define IS_DOWN  0x02
-#define IS_LEFT  0x03
-#define IS_RIGHT 0x04
-
 s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 

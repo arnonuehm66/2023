@@ -22,11 +22,6 @@
 
 #define ERR_FILE -1
 
-#define IS_UP    0x01
-#define IS_DOWN  0x02
-#define IS_LEFT  0x03
-#define IS_RIGHT 0x04
-
 s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 
@@ -69,8 +64,101 @@ my getLinesFromFile(const char* filename) {
 
 
 //******************************************************************************
+void getAllGalaxyCoordinates(t_array(my)* pmyX, t_array(my)* pmyY) {
+  for (my y = 0; y < g_aLines.sCount; ++y) {
+    for (my x = 0; x < g_aLines.pVal[y].len; ++x) {
+      if (g_aLines.pVal[y].cStr[x] == '#') {
+        daAdd(my, (*pmyX), x);
+        daAdd(my, (*pmyY), y);
+      }
+    }
+  }
+}
+
+#define SEE_COL 0x01
+#define SEE_ROW 0x02
+
+//******************************************************************************
+int isClear(t_array(my)* pmyX, t_array(my)* pmyY, my x, my y, int seeWhat) {
+  int isClear = 1;
+
+  if (seeWhat == SEE_ROW) {
+    for (y = 0; y < g_aLines.sCount; ++y) {
+      if (g_aLines.pVal[y].cStr[x] == '#') isClear = 0;
+    }
+  }
+
+  if (seeWhat == SEE_COL) {
+    for (x = 0; x < g_aLines.pVal[y].len; ++x) {
+      if (g_aLines.pVal[y].cStr[x] == '#') isClear = 0;
+    }
+  }
+
+  return isClear;
+}
+
+//******************************************************************************
+void inflateUniverse(t_array(my)* pmyX, t_array(my)* pmyY) {
+  t_array(cstr) tmpLines;
+
+  daInit(cstr, tmpLines);
+
+  // Inflate y
+  for (my y = 0; y < g_aLines.sCount; ++y) {
+    // Extra line if clear.
+    if (isClear(pmyX, pmyY, 0, y, SEE_COL)) daAdd(cstr, tmpLines, g_aLines.pVal[y]);
+    daAdd(cstr, tmpLines, g_aLines.pVal[y]);
+  }
+
+  // Inflate x
+  for (my x = 0; x < g_aLines.pVal[0].len; ++x) {
+    if (isClear(pmyX, pmyY, x, 0, SEE_ROW)) 0;
+  }
+
+  daFreeEx(tmpLines, cStr);
+}
+
+//******************************************************************************
+my myintabs(my i) {
+  if (i < 0) return -i;
+  return i;
+}
+
+//******************************************************************************
+my sumAllGalaxyPaths(t_array(my)* pmyX, t_array(my)* pmyY) {
+  my mySteps  = 0;
+  my myAryMax = pmyX->sCount;
+
+  for (my iFrom = 0; iFrom < myAryMax - 1; ++iFrom) {
+    for (my iTo = iFrom + 1; iTo < myAryMax; ++iTo) {
+      mySteps += myintabs(pmyX->pVal[iFrom] - pmyX->pVal[iTo]);
+      mySteps += myintabs(pmyY->pVal[iFrom] - pmyY->pVal[iTo]);
+    }
+  }
+  return mySteps;
+}
+
+//******************************************************************************
 my getAnswer(void) {
   my myCount = 0;
+
+  t_array(my) myX;
+  t_array(my) myY;
+
+  daInit(my, myX);
+  daInit(my, myY);
+
+  getAllGalaxyCoordinates(&myX, &myY);
+  inflateUniverse(&myX, &myY);
+
+  daClear(my, myX);
+  daClear(my, myY);
+
+  getAllGalaxyCoordinates(&myX, &myY);
+  myCount = sumAllGalaxyPaths(&myX, &myY);
+
+  daFree(myX);
+  daFree(myY);
 
   return myCount;
 }
