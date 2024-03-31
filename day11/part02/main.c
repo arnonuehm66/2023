@@ -80,17 +80,13 @@ void getAllGalaxyCoords(t_array(my)* pmyX, t_array(my)* pmyY) {
 
 //******************************************************************************
 int isClear(my x, my y, int testWhat) {
-  if (testWhat == TEST_ROW) {
-    for (x = 0; x < g_aLines.pVal[y].len; ++x) {
+  if (testWhat == TEST_ROW)
+    for (x = 0; x < g_aLines.pVal[y].len; ++x)
       if (g_aLines.pVal[y].cStr[x] == '#') return 0;
-    }
-  }
 
-  if (testWhat == TEST_COL) {
-    for (y = 0; y < g_aLines.sCount; ++y) {
+  if (testWhat == TEST_COL)
+    for (y = 0; y < g_aLines.sCount; ++y)
       if (g_aLines.pVal[y].cStr[x] == '#') return 0;
-    }
-  }
 
   return 1;
 }
@@ -124,13 +120,47 @@ my myintabs(my i) {
 }
 
 //******************************************************************************
-my getStepsX(my xFrom, my xTo, t_array(my)* pmyGapCol, my myGap) {
+int isBetween(my no, my a, my b) {
+  my min = a;
+  my max = b;
+
+  if (min > max) {
+    min = b;
+    max = a;
+  }
+
+  if (min < no && no < max)
+    return 1;
+
   return 0;
 }
 
 //******************************************************************************
+my getStepsX(my xFrom, my xTo, t_array(my)* pmyGapCol, my myGap) {
+  my myStepsX = myintabs(xFrom - xTo);
+  my myCol    = 0;
+
+    for (my i = 0; i < pmyGapCol->sCount; ++i) {
+      myCol = pmyGapCol->pVal[i];
+      if (isBetween(myCol, xFrom, xTo))
+        myStepsX += myGap;
+    }
+
+  return myStepsX;
+}
+
+//******************************************************************************
 my getStepsY(my yFrom, my yTo, t_array(my)* pmyGapRow, my myGap) {
-  return 0;
+  my myStepsY = myintabs(yFrom - yTo);
+  my myRow    = 0;
+
+  for (my i = 0; i < pmyGapRow->sCount; ++i) {
+    myRow = pmyGapRow->pVal[i];
+      if (isBetween(myRow, yFrom, yTo))
+        myStepsY += myGap;
+  }
+
+  return myStepsY;
 }
 
 //******************************************************************************
@@ -166,7 +196,7 @@ my getAnswer(void) {
   getAllGalaxyCoords(&myGalaxyX, &myGalaxyY);
   getAllGapCoords(&myGapX, &myGapY);
   printGalaxy();
-  myCount = sumAllGalaxyPaths(&myGalaxyX, &myGalaxyY, &myGapX, &myGapY, 1);
+  myCount = sumAllGalaxyPaths(&myGalaxyX, &myGalaxyY, &myGapX, &myGapY, 1000000 - 1);
 
   daFree(myGalaxyX);
   daFree(myGalaxyY);
