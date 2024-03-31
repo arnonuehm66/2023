@@ -22,6 +22,9 @@
 
 #define ERR_FILE -1
 
+#define TEST_COL 0x01
+#define TEST_ROW 0x02
+
 s_array(my);
 //s_array(cstr);  // <c_my_regex.h>
 
@@ -64,6 +67,14 @@ my getLinesFromFile(const char* filename) {
 
 
 //******************************************************************************
+void printGalaxy(void) {
+  for (my y = 0; y < g_aLines.sCount; ++y) {
+    printf("%s\n", g_aLines.pVal[y].cStr);
+  }
+  prtHl("-", 30);
+}
+
+//******************************************************************************
 void getAllGalaxyCoordinates(t_array(my)* pmyX, t_array(my)* pmyY) {
   for (my y = 0; y < g_aLines.sCount; ++y) {
     for (my x = 0; x < g_aLines.pVal[y].len; ++x) {
@@ -75,26 +86,21 @@ void getAllGalaxyCoordinates(t_array(my)* pmyX, t_array(my)* pmyY) {
   }
 }
 
-#define SEE_COL 0x01
-#define SEE_ROW 0x02
-
 //******************************************************************************
-int isClear(t_array(my)* pmyX, t_array(my)* pmyY, my x, my y, int seeWhat) {
-  int isClear = 1;
-
-  if (seeWhat == SEE_ROW) {
-    for (y = 0; y < g_aLines.sCount; ++y) {
-      if (g_aLines.pVal[y].cStr[x] == '#') isClear = 0;
+int isClear(t_array(cstr)* pLines, my x, my y, int testWhat) {
+  if (testWhat == TEST_ROW) {
+    for (x = 0; x < pLines->pVal[y].len; ++x) {
+      if (pLines->pVal[y].cStr[x] == '#') return 0;
     }
   }
 
-  if (seeWhat == SEE_COL) {
-    for (x = 0; x < g_aLines.pVal[y].len; ++x) {
-      if (g_aLines.pVal[y].cStr[x] == '#') isClear = 0;
+  if (testWhat == TEST_COL) {
+    for (y = 0; y < pLines->sCount; ++y) {
+      if (pLines->pVal[y].cStr[x] == '#') return 0;
     }
   }
 
-  return isClear;
+  return 1;
 }
 
 //******************************************************************************
@@ -103,19 +109,35 @@ void inflateUniverse(t_array(my)* pmyX, t_array(my)* pmyY) {
 
   daInit(cstr, tmpLines);
 
-  // Inflate y
+  // Inflate rows (y).
   for (my y = 0; y < g_aLines.sCount; ++y) {
     // Extra line if clear.
-    if (isClear(pmyX, pmyY, 0, y, SEE_COL)) daAdd(cstr, tmpLines, g_aLines.pVal[y]);
-    daAdd(cstr, tmpLines, g_aLines.pVal[y]);
+    if (isClear(&g_aLines, 0, y, TEST_ROW))
+      daAdd(cstr, tmpLines, csNew(g_aLines.pVal[y].cStr));
+    daAdd(cstr, tmpLines, csNew(g_aLines.pVal[y].cStr));
   }
 
-  // Inflate x
-  for (my x = 0; x < g_aLines.pVal[0].len; ++x) {
-    if (isClear(pmyX, pmyY, x, 0, SEE_ROW)) 0;
+  daClear(cstr, g_aLines);
+
+  // Inflate columns (x).
+  for (my y = 0; y < tmpLines.sCount; ++y) {
+    daAdd(cstr, g_aLines, csNew(""));
+
+    for (my x = 0; x < tmpLines.pVal[y].len; ++x) {
+      if (isClear(&tmpLines, x, 0, TEST_COL)) {
+        csCat(&g_aLines.pVal[y], g_aLines.pVal[y].cStr, ".");
+      }
+
+      if (tmpLines.pVal[y].cStr[x] == '.') {
+        csCat(&g_aLines.pVal[y], g_aLines.pVal[y].cStr, ".");
+      }
+      else {
+        csCat(&g_aLines.pVal[y], g_aLines.pVal[y].cStr, "#");
+      }
+    }
   }
 
-  daFreeEx(tmpLines, cStr);
+  daFreeEx(tmpLines, cStr);  // ???
 }
 
 //******************************************************************************
@@ -149,7 +171,9 @@ my getAnswer(void) {
   daInit(my, myY);
 
   getAllGalaxyCoordinates(&myX, &myY);
+  printGalaxy();
   inflateUniverse(&myX, &myY);
+  printGalaxy();
 
   daClear(my, myX);
   daClear(my, myY);
@@ -183,7 +207,6 @@ int main(int argc, char* argv[]) {
   prtHl("-", 30);
   myAnswer = getAnswer();
 
-  prtHl("-", 30);
   prtVar("%"MY, myAnswer);
 
   daFree(g_aLines);
