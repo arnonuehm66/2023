@@ -2,7 +2,7 @@
  ** Name: c_string.h
  ** Purpose:  Provides a self contained kind of string.
  ** Author: (JE) Jens Elstner
- ** Version: v0.21.6
+ ** Version: v0.22.1
  *******************************************************************************
  ** Date        User  Log
  **-----------------------------------------------------------------------------
@@ -81,6 +81,10 @@
  ** 23.07.2023  JE    Refactored csInStr() constants.
  ** 23.07.2023  JE    Now csInStrRev() start position is counted from left.
  ** 04.08.2023  JE    Now if sLenFrom == 0 csIconv() frees resources.
+ ** xx.04.2024  JE    Look into github to update it.
+ ** 22.04.2024  JE    Added csAddChar() and csAddStr().
+ *******************************************************************************
+ ** ToDo: Merge with github version.
  *******************************************************************************/
 
 
@@ -161,6 +165,8 @@ void csFree(cstr* pcsString);
 void        csSet(cstr* pcsString, const char* pcString);
 void        csSetf(cstr* pcsString, const char* pcFormat, ...);
 void        csCat(cstr* pcsDest, const char* pcSource, const char* pcAdd);
+void        csAddChar(cstr* pcsDest, const char cAdd);
+void        csAddStr(cstr* pcsDest, const char* pcAdd);
 long long   csInStr(long long llPosStart, const char* pcString, const char* pcFind);
 long long   csInStrRev(long long llPosStart, const char* pcString, const char* pcFind);
 void        csMid(cstr* pcsDest, const char* pcSource, long long llOffset, long long llLength);
@@ -266,7 +272,7 @@ static long long cstr_len_utf8_char(const char* pcString, long long* pLen) {
  * Name: cstr_len
  *******************************************************************************/
 static long long cstr_len(const char* pcString) {
-  int i = 0;
+  long long i = 0;
   while (pcString[i] != '\0')
     ++i;
   return i;
@@ -423,6 +429,28 @@ void csCat(cstr* pcsDest, const char* pcSource, const char* pcAdd) {
 
   csFree(&csOut);
   csFree(&csAdd);
+}
+
+/*******************************************************************************
+ * Name: csAddChar
+ * Purpose: Add one char to a cstr object.
+ *******************************************************************************/
+void csAddChar(cstr* pcsDest, const char cAdd) {
+  cstr_double_capacity_if_full(pcsDest, 1);
+
+  pcsDest->cStr[pcsDest->len]     = cAdd;
+  pcsDest->cStr[pcsDest->len + 1] = 0;
+
+  ++pcsDest->len;
+  ++pcsDest->size;
+}
+
+/*******************************************************************************
+ * Name: csAddStr
+ * Purpose: Add a char string to a cstr object.
+ *******************************************************************************/
+void csAddStr(cstr* pcsDest, const char* pcAdd) {
+  csCat(pcsDest, pcsDest->cStr, pcAdd);
 }
 
 /*******************************************************************************

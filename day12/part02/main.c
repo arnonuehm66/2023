@@ -94,19 +94,17 @@ void getSpringReport(cstr* pcsLine, cstr* pcsSprings, t_array(my)* paReports) {
 
 //******************************************************************************
 void fillTempSprings(cstr* pcsSprings, cstr* pcsTmpSprings, my myCount) {
-  my   myBit  = 0;
-  char cStr[] = ".";
+  my myBit = 0;
 
   for (my i = 0; i < pcsSprings->len; ++i) {
     if (pcsSprings->cStr[i] != '?') {
-      cStr[0] = pcsSprings->cStr[i];
-      csCat(pcsTmpSprings, pcsTmpSprings->cStr, cStr);
+      csAddChar(pcsTmpSprings, pcsSprings->cStr[i]);
       continue;
     }
     if ((myCount & (1 << myBit)) == 0) {
-      csCat(pcsTmpSprings, pcsTmpSprings->cStr, "."); }
+      csAddChar(pcsTmpSprings, '.'); }
     else {
-      csCat(pcsTmpSprings, pcsTmpSprings->cStr, "#"); }
+      csAddChar(pcsTmpSprings, '#'); }
     ++myBit;
   }
 }
