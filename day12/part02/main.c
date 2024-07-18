@@ -116,6 +116,10 @@ void printReports(t_array(my)* paReports) {
 }
 
 //******************************************************************************
+int buildSpringConfig(cstr* pcsSprings, t_array(my)* paReports) {
+}
+
+//******************************************************************************
 int checkSpringConfig(cstr* pcsSprings, t_array(my)* paReports) {
   my  myBrokenSprings = 0;
   int fIsBroken       = 0;
@@ -177,27 +181,31 @@ my calcPermutations(cstr* pcsSprings, t_array(my)* paReports) {
   for (my i = 0; i < pcsSprings->len; ++i)
     if (pcsSprings->cStr[i] == '?') myMax <<= 1;
 
+    // Create all sane permutation. Be intelligent ... hahaha ...
+
   // Count from 0 to max (1111...)
   for (my myCount = 0; myCount < myMax; ++myCount) {
-    // Fill temp springs string to check against report array.
-    csClear(&csTmpSprings);
-    fillTempSprings(pcsSprings, &csTmpSprings, myCount);
-
-    // printf("Springs '%s' (Temp: '%s'), Count = %"MY" => ",
-    //         pcsSprings->cStr,
-    //         csTmpSprings.cStr,
-    //         myCount);
-
-    if (checkSpringConfig(&csTmpSprings, paReports)) {
-      // printf("Yes");
-      ++myCorrectConfigs;
-    }
-    // else {
-    //   printf("No");
-    // }
-    // printf("\n");
+    if (! buildSpringConfig(&csTmpSprings, paReports)) continue;
   }
   // prtHl("-", 80);
+
+  //   // Fill temp springs string to check against report array.
+  //   csClear(&csTmpSprings);
+  //   fillTempSprings(pcsSprings, &csTmpSprings, myCount);
+
+  //   // printf("Springs '%s' (Temp: '%s'), Count = %"MY" => ",
+  //   //         pcsSprings->cStr,
+  //   //         csTmpSprings.cStr,
+  //   //         myCount);
+
+  //   if (checkSpringConfig(&csTmpSprings, paReports)) {
+  //     // printf("Yes");
+  //     ++myCorrectConfigs;
+  //   }
+  //   // else {
+  //   //   printf("No");
+  //   // }
+  //   // printf("\n");
 
   csFree(&csTmpSprings);
 
