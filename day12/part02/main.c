@@ -71,8 +71,11 @@ my getLinesFromFile(const char* filename) {
 void getSpringReport(cstr* pcsLine, cstr* pcsSprings, t_array(my)* paReports) {
   t_rx_matcher rxLine    = {0};
   t_rx_matcher rxReport  = {0};
-  cstr         csReport  = csNew("");
+  cstr         csReport  = {0};
   my           myReport  = 0;
+
+  csClear(pcsSprings);
+  daClear(my, (*paReports));
 
   rxInitMatcher(&rxLine, "(\\S+) (\\S+)", "", NULL);
   rxInitMatcher(&rxReport, "(\\d+)", "", NULL);
@@ -82,7 +85,6 @@ void getSpringReport(cstr* pcsLine, cstr* pcsSprings, t_array(my)* paReports) {
   (*pcsSprings) = csNew(rxLine.dacsMatch.pVal[1].cStr);
   csReport      = csNew(rxLine.dacsMatch.pVal[2].cStr);
 
-  daClear(my, (*paReports));
   while (rxMatch(&rxReport, RX_KEEP_POS, csReport.cStr, RX_LEN_MAX, NULL, NULL)) {
     myReport = toMyInt(rxReport.dacsMatch.pVal[1].cStr);
     daAdd(my, (*paReports), myReport);
@@ -90,127 +92,102 @@ void getSpringReport(cstr* pcsLine, cstr* pcsSprings, t_array(my)* paReports) {
 
   rxFreeMatcher(&rxLine);
   rxFreeMatcher(&rxReport);
+  csFree(&csReport);
 }
 
 //******************************************************************************
-void fillTempSprings(cstr* pcsSprings, cstr* pcsTmpSprings, my myCount) {
-  my myBit = 0;
-
-  for (my i = 0; i < pcsSprings->len; ++i) {
-    if (pcsSprings->cStr[i] != '?') {
-      csAddChar(pcsTmpSprings, pcsSprings->cStr[i]);
-      continue;
-    }
-    if ((myCount & (1 << myBit)) == 0) {
-      csAddChar(pcsTmpSprings, '.'); }
-    else {
-      csAddChar(pcsTmpSprings, '#'); }
-    ++myBit;
-  }
-}
-
-//******************************************************************************
-void printReports(t_array(my)* paReports) {
-  for (my i = 0; i < paReports->sCount; ++i)
-    printf("%"MY" ", paReports->pVal[i]);
-}
-
-//******************************************************************************
-int buildSpringConfig(cstr* pcsSprings, t_array(my)* paReports) {
-}
-
-//******************************************************************************
+// def is_valid_condition(spring_state, damaged_spring_record):
 int checkSpringConfig(cstr* pcsSprings, t_array(my)* paReports) {
-  my  myBrokenSprings = 0;
-  int fIsBroken       = 0;
-  int fWasBroken      = 0;
-  int fCheckedOk      = 1;
+//     return (
+//                damaged_spring_record[0] <= len(spring_state)
+//              and
+//                SpringState.OPERATIONAL.value not in spring_state[: damaged_spring_record[0]]
+//              and (
+//                  damaged_spring_record[0] == len(spring_state)
+//                or
+//                  spring_state[damaged_spring_record[0]] != SpringState.DAMAGED.value
+//              )
+//            )
+  int fBool1 = (paReports->pVal[0] <= pcsSprings->len);
+  int fBool2 = 0;
+  int fBool3 = (paReports->pVal[0] == pcsSprings->len);
+  int fBool4 = pcsSprings->cStr[paReports->pVal[0]] != '#';
 
-  t_array(my) aTmpReports;
-  daInit(my, aTmpReports);
-
-  for (my i = 0; i < pcsSprings->len; ++i) {
-    fIsBroken = (pcsSprings->cStr[i] == '#') ? 1 : 0;
-
-    // .#
-    if (! fIsBroken && fWasBroken) {
-      daAdd(my, aTmpReports, myBrokenSprings);
-      myBrokenSprings = 0;
-      fWasBroken      = 0;
-    }
-    // ##
-    if (fIsBroken) {
-       ++myBrokenSprings;
-       fWasBroken = 1;
-    }
-  }
-  // #.
-  if (fWasBroken)
-    daAdd(my, aTmpReports, myBrokenSprings);
-
-  // printf("(");
-  // printReports(&aTmpReports);
-  // printf(") ");
-
-  if (paReports->sCount != aTmpReports.sCount) {
-    fCheckedOk = 0;
-    goto free_n_exit;
+  for (int i = 0; i < paReports->pVal[0]; ++i) {
+    if (pcsSprings->cStr[i] == '.') fBool2 = 1;
   }
 
-  for (my i = 0; i < paReports->sCount; ++i) {
-    if (paReports->pVal[i] != aTmpReports.pVal[i]) {
-      fCheckedOk = 0;
-      goto free_n_exit;
-    }
-  }
-
-free_n_exit:
-  daFree(aTmpReports);
-
-  return fCheckedOk;
+  return  (fBool1 && fBool2 && (fBool3 || fBool4));
 }
+
+
+//******************************************************************************
+my copyArray(t_array(my)* paRepTo, t_array(my)* paRepFrom, my start, my end) {
+    daClear(my, (*paRepTo));
+    for (my i = start; i < end; ++i) {
+      daAdd(my, (*paRepTo), paRepFrom->pVal[i]);
+    }
+}
+
 
 //******************************************************************************
 //* Generates all permutations and look if they work out.
+// def get_valid_spring_record_combinations(spring_state, damaged_spring_record):
 my calcPermutations(cstr* pcsSprings, t_array(my)* paReports) {
-  my   myMax            = 1;
-  my   myCorrectConfigs = 0;
-  cstr csTmpSprings     = csNew("");
-
-  // Get bit-'field's width by conting all '?'s.
-  for (my i = 0; i < pcsSprings->len; ++i)
-    if (pcsSprings->cStr[i] == '?') myMax <<= 1;
-
-    // Create all sane permutation. Be intelligent ... hahaha ...
-
-  // Count from 0 to max (1111...)
-  for (my myCount = 0; myCount < myMax; ++myCount) {
-    if (! buildSpringConfig(&csTmpSprings, paReports)) continue;
+//     if not damaged_spring_record:
+//         if SpringState.DAMAGED.value in spring_state:
+//             return 0
+//         else:
+//             return 1
+  if (paReports->sCount == 0) {
+    for (int i = 0; i < pcsSprings->len; ++i) {
+      if (pcsSprings->cStr[i] == '#') return 0;
+    }
+    return 1;
   }
-  // prtHl("-", 80);
+//     if not spring_state:
+//         if not damaged_spring_record:
+//             return 1
+//         else:
+//             return 0
+  if (pcsSprings->len == 0) {
+    if (paReports->sCount == 0)
+      return 1;
+    else
+      return 0;
+  }
+//     total_combinations = 0
+  my          myTotalCount = 0;
+  cstr        csSprings    = csNew("");
+  t_array(my) aReports;
+  daInit(my, aReports);
 
-  //   // Fill temp springs string to check against report array.
-  //   csClear(&csTmpSprings);
-  //   fillTempSprings(pcsSprings, &csTmpSprings, myCount);
+//     # if "." or "?"
+//     if spring_state[0] in [SpringState.OPERATIONAL.value, SpringState.UNKNOWN.value]:
+//         total_combinations += get_valid_spring_record_combinations(spring_state[1:], damaged_spring_record)
+  if (pcsSprings->cStr[0] == '.' || pcsSprings->cStr[0] == '?') {
+    csMid(&csSprings, pcsSprings->cStr, 1, CS_MID_REST);    // spring_state[1:]
+    copyArray(&aReports, paReports, 0, paReports->sCount);  // damaged_spring_record
+    myTotalCount += calcPermutations(&csSprings, &aReports);
+  }
+//     # if "#" or "?"
+//     if spring_state[0] in [SpringState.DAMAGED.value, SpringState.UNKNOWN.value]:
+//         if is_valid_condition(spring_state, damaged_spring_record):
+//             total_combinations += get_valid_spring_record_combinations(spring_state[damaged_spring_record[0] + 1 :], damaged_spring_record[1:])
+  if (pcsSprings->cStr[0] == '#' || pcsSprings->cStr[0] == '?') {
+    if (checkSpringConfig(pcsSprings, paReports)) {
+        csMid(&csSprings, pcsSprings->cStr, paReports->pVal[0] + 1, CS_MID_REST); // = spring_state[damaged_spring_record[0] + 1 :]
+        copyArray(&aReports, paReports, 0, paReports->sCount);                    // = damaged_spring_record[1:]
+        myTotalCount += calcPermutations(&csSprings, &aReports);
+    }
+  }
 
-  //   // printf("Springs '%s' (Temp: '%s'), Count = %"MY" => ",
-  //   //         pcsSprings->cStr,
-  //   //         csTmpSprings.cStr,
-  //   //         myCount);
-
-  //   if (checkSpringConfig(&csTmpSprings, paReports)) {
-  //     // printf("Yes");
-  //     ++myCorrectConfigs;
-  //   }
-  //   // else {
-  //   //   printf("No");
-  //   // }
-  //   // printf("\n");
-
-  csFree(&csTmpSprings);
-
-  return myCorrectConfigs;
+//     return total_combinations
+  csFree(&csSprings);
+  daFree(aReports);
+  return myTotalCount;
 }
+
 
 //******************************************************************************
 my getAnswer(void) {

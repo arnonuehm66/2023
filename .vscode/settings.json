@@ -1,6 +1,7 @@
 {
   "files.associations": {
     "stdio.h": "c",
-    "c_my_regex.h": "c"
+    "c_my_regex.h": "c",
+    "c_dynamic_arrays_macros.h": "c"
   }
 }

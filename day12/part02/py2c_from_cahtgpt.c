@@ -3,12 +3,16 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "../../libs/c_dynamic_arrays_macros.h"
+
 
 typedef enum {
     OPERATIONAL = '.',
     DAMAGED = '#',
     UNKNOWN = '?'
 } SpringState;
+
+s_array(int);
 
 
 //******************************************************************************
@@ -30,7 +34,7 @@ int is_valid_condition(char* spring_state, int* damaged_spring_record) {
 }
 
 //******************************************************************************
-int get_valid_spring_record_combinations(char* spring_state, int* damaged_spring_record) {
+int get_valid_spring_record_combinations(char* spring_state, t_array(int)* damaged_spring_record) {
     if (!damaged_spring_record) {
         if (strchr(spring_state, DAMAGED) != NULL) {
             return 0;
@@ -65,73 +69,56 @@ int get_valid_spring_record_combinations(char* spring_state, int* damaged_spring
 }
 
 //******************************************************************************
-int sum_spring_record_combinations(char* spring_condition_records) {
-    int total_combinations = 0;
-    char* spring_record;
-    char* record_ptr = strtok(spring_condition_records, "\n");
-    while (record_ptr != NULL) {
-        spring_record = strdup(record_ptr);
-        char* spring_state = strtok(spring_record, " ");
-        char* damaged_spring_record_str = strtok(NULL, " ");
-        char* token;
-        int damaged_spring_record[3];
-        int i = 0;
-        while ((token = strtok(NULL, ",")) != NULL) {
-            damaged_spring_record[i++] = atoi(token);
-        }
-        total_combinations += get_valid_spring_record_combinations(spring_state, damaged_spring_record);
-        free(spring_record);
-        record_ptr = strtok(NULL, "\n");
-    }
-    return total_combinations;
-}
-
-//******************************************************************************
 int sum_spring_record_combinations_unfold(char* spring_condition_records) {
-    int   total_combinations = 0;
-    char* spring_record;
-    char* record_ptr         = strtok(spring_condition_records, "\n");
+    int   total_combinations        = 0;
+    char* spring_record             = NULL;
+    char* record_ptr                = strtok(spring_condition_records, "\n");
+    char* spring_state              = NULL;
+    char* damaged_spring_record_str = NULL;
+    char* token                     = NULL;
+
+    t_array(int) damaged_spring_record = {0};
+    daInit( int, damaged_spring_record);
 
     while (record_ptr != NULL) {
-              spring_record             = strdup(record_ptr);
-        char* spring_state              = strtok(spring_record, " ");
-        char* damaged_spring_record_str = strtok(NULL, " ");
-        char* token;
-        int   damaged_spring_record[3];
+        spring_record             = strdup(record_ptr);
+        spring_state              = strtok(spring_record, " ");
+        damaged_spring_record_str = strtok(NULL, " ");
+        token;
+        daClear(int, damaged_spring_record);
 
-        int i = 0;
-        while ((token = strtok(NULL, ",")) != NULL) {
-            damaged_spring_record[i++] = atoi(token);
+        for (int i = 0; (token = strtok(NULL, ",")) != NULL; ++i) {
+            daAdd(int, damaged_spring_record, atoi(token));
         }
 
         for (int j = 0; j < 5; j++) {
-            total_combinations += get_valid_spring_record_combinations(spring_state, damaged_spring_record);
+            total_combinations += get_valid_spring_record_combinations(spring_state, &damaged_spring_record);
         }
 
         free(spring_record);
         record_ptr = strtok(NULL, "\n");
     }
+
     return total_combinations;
 }
 
 
 //******************************************************************************
 int main() {
-    char* filename = "data.txt";
-    FILE* file     = fopen(filename, "r");
+    char*   spring_condition_records = NULL;
+    size_t  len                      = 0;
+    ssize_t read                     = 0;
+    int     sum                      = 0;
+    char*   filename                 = "data.txt";
+    FILE*   file                     = fopen(filename, "r");
 
     if (file == NULL) {
         printf("Error opening file %s\n", filename);
         return 1;
     }
 
-    char* spring_condition_records = NULL;
-    size_t len = 0;
-    ssize_t read;
-
     while ((read = getline(&spring_condition_records, &len, file)) != -1) {
-        // int sum = sum_spring_record_combinations(spring_condition_records);
-        int sum = sum_spring_record_combinations_unfold(spring_condition_records);
+        sum = sum_spring_record_combinations_unfold(spring_condition_records);
         printf("Total valid combinations: %d\n", sum);
     }
 
