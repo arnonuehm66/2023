@@ -34,7 +34,7 @@ int getIt(t_array(cstr)* pdacsLines) {
   int          iSum       = 0;
   int          iErr       = 0;
   cstr         csErr      = csNew("");
-  cstr         csSet      = csNew("");
+//  cstr         csSet      = csNew("");
 
   rxInitMatcher(&tRxNumber, "(\\d+)", "", &csErr);
 

@@ -43,7 +43,7 @@ int calcIfGameIsTrue(cstr* pcsLine, t_data tMax) {
   int          iBlue    = 0;
   int          iErr     = 0;
   cstr         csErr    = csNew("");
-  cstr         csSet    = csNew("");
+//  cstr         csSet    = csNew("");
 
   rxInitMatcher(&tRxGame,  "Game (\\d+)",             "", &csErr);
   rxInitMatcher(&tRxSet,   "(:|;) ([^;]*)",           "", &csErr);

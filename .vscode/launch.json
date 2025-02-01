@@ -11,7 +11,7 @@
       // "program": "${workspaceFolder}/day02/part01/main",
       // "args": ["testdata.txt", "12", "13", "14"],
       "program": "${workspaceFolder}/day12/part02/main",
-      "args": ["testdata.txt"],
+      "args": ["testdata2.txt"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
       "environment": [],

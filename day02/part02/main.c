@@ -24,7 +24,7 @@ int calcIfGameGamesMax(cstr* pcsLine) {
   int          iBlueMax  = 1;
   int          iErr      = 0;
   cstr         csErr     = csNew("");
-  cstr         csSet     = csNew("");
+//  cstr         csSet     = csNew("");
 
   rxInitMatcher(&tRxSet,   "(:|;) ([^;]*)",           "", &csErr);
   rxInitMatcher(&tRxColor, "(\\d+) (red|blue|green)", "", &csErr);

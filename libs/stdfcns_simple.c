@@ -54,6 +54,12 @@ typedef union u_char2Int{
   uint32_t uint32;
 } t_char2Int;
 
+// toInt64() bytes to int converter.
+typedef union u_char2Int64 {
+  char     ac8Bytes[8];
+  uint64_t uint64;
+} t_char2Int64;
+
 
 //******************************************************************************
 //* Functions
@@ -137,32 +143,66 @@ void printHex2err(uchar* pucBytes, size_t sLength) {
 }
 
 /*******************************************************************************
+ * Name:  toInt64
+ * Purpose: Converts up to 8 bytes to integer.
+ *******************************************************************************/
+int toInt64(char* pc8Bytes, int iCount) {
+  t_char2Int64 tInt = {0};
+  for (int i = 0; i < iCount; ++i) {
+#   if __BYTE_ORDER == __LITTLE_ENDIAN
+      tInt.ac8Bytes[i] = pc8Bytes[i];
+#   else
+      tInt.ac8Bytes[i] = pc8Bytes[iCount - i - 1];
+#   endif
+  }
+  return tInt.uint64;
+}
+
+/*******************************************************************************
+ * Name:  revInt64
+ * Purpose: Revers byte order of a 64 bit integer.
+ *******************************************************************************/
+uint64_t revInt64(uint64_t ui64Int) {
+  t_char2Int64 tc2iInt    = {0};
+  t_char2Int64 tc2iRevInt = {0};
+
+  // Invert bytes.
+  tc2iInt.uint64 = ui64Int;
+  for (int i = 0; i < 8; ++i) {
+    tc2iRevInt.ac8Bytes[i] = tc2iInt.ac8Bytes[7 - i];
+  }
+  return tc2iRevInt.uint64;
+}
+
+/*******************************************************************************
  * Name:  toInt
  * Purpose: Converts up to 4 bytes to integer.
  *******************************************************************************/
 int toInt(char* pc4Bytes, int iCount) {
   t_char2Int tInt = {0};
-    for (int i = 0; i < iCount; ++i)
-#     if __BYTE_ORDER == __LITTLE_ENDIAN
-        tInt.ac4Bytes[i] = pc4Bytes[i];
-#     else
-        tInt.ac4Bytes[i] = pc4Bytes[iCount - i - 1];
-#     endif
+  for (int i = 0; i < iCount; ++i) {
+#   if __BYTE_ORDER == __LITTLE_ENDIAN
+      tInt.ac4Bytes[i] = pc4Bytes[i];
+#   else
+      tInt.ac4Bytes[i] = pc4Bytes[iCount - i - 1];
+#   endif
+  }
   return tInt.uint32;
 }
 
 /*******************************************************************************
  * Name:  revInt32
- * Purpose: Revers byte order of an 32 bit integer.
+ * Purpose: Revers byte order of a 32 bit integer.
  *******************************************************************************/
 uint32_t revInt32(uint32_t ui32Int) {
   t_char2Int tc2iInt    = {0};
   t_char2Int tc2iRevInt = {0};
 
-  // Invert bytes in uTicks.
+  // Invert bytes.
   tc2iInt.uint32 = ui32Int;
-  for (int i = 0; i < 4; ++i) tc2iRevInt.ac4Bytes[i] = tc2iInt.ac4Bytes[3 - i];
-
+  for (int i = 0; i < 4; ++i) {
+    tc2iRevInt.ac4Bytes[i] = tc2iInt.ac4Bytes[3 - i];
+  }
   return tc2iRevInt.uint32;
 }
 
